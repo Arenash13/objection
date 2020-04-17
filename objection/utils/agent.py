@@ -134,7 +134,7 @@ class Agent(object):
 
         raise Exception('Failed to find a device to attach to!')
 
-    def get_session(self) -> frida.core.Session:
+    def get_session(self, stdio) -> frida.core.Session:
         """
             Attempt to get a Frida session on a device.
         """
@@ -163,7 +163,10 @@ class Agent(object):
 
         # TODO: Handle the fact that gadget mode can't spawn
 
-        self.spawned_pid = self.device.spawn(state_connection.gadget_name)
+        debug_print(state_connection.gadget_name)
+        self.spawned_pid = self.device.spawn(state_connection.gadget_name, stdio=stdio)
+        debug_print(self.spawned_pid)
+        debug_print(self.device)
         debug_print('PID `{pid}` spawned, attaching...'.format(pid=self.spawned_pid))
 
         self.session = self.device.attach(self.spawned_pid)
@@ -190,7 +193,7 @@ class Agent(object):
 
         return ''.join([str(x) for x in agent])
 
-    def inject(self):
+    def inject(self, stdio):
         """
             Injects the Objection Agent.
 
@@ -199,7 +202,7 @@ class Agent(object):
 
         debug_print('Injecting agent...')
 
-        session = self.get_session()
+        session = self.get_session(stdio)
         self.script = session.create_script(source=self._get_agent_source())
         self.script.on('message', self.on_message)
         self.script.load()

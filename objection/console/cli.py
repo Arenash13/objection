@@ -31,8 +31,9 @@ from ..utils.helpers import normalize_gadget_name, print_frida_connection_help, 
 @click.option('--serial', '-S', required=False, default=None, help='A device serial to connect to.')
 @click.option('--debug', '-d', required=False, default=False, is_flag=True,
               help='Enable debug mode with verbose output. (Includes agent source map in stack traces)')
+@click.option('--stdio', '-std', required=False, default= None, help='Allow to pipe the outputs of a Frida device.')
 def cli(network: bool, host: str, port: int, api_host: str, api_port: int,
-        gadget: str, serial: str, debug: bool) -> None:
+        gadget: str, serial: str, debug: bool, stdio : str) -> None:
     """
         \b
              _   _         _   _
@@ -50,6 +51,9 @@ def cli(network: bool, host: str, port: int, api_host: str, api_port: int,
 
     if debug:
         app_state.debug = debug
+    
+    global std
+    std = stdio
 
     # disable the usb comms if network is chosen.
     if network:
@@ -76,7 +80,7 @@ def api():
     agent = Agent()
 
     try:
-        agent.inject()
+        agent.inject(std)
     except frida.ServerNotRunningError as e:
         click.secho('Unable to connect to the frida server: {error}'.format(error=str(e)), fg='red')
         return
@@ -111,7 +115,7 @@ def explore(startup_command: str, quiet: bool, file_commands, startup_script: cl
     agent = Agent()
 
     try:
-        agent.inject()
+        agent.inject(std)
     except (frida.ServerNotRunningError, frida.NotSupportedError) as e:
         click.secho('Unable to connect to the frida server: {error}'.format(error=str(e)), fg='red')
         return
@@ -225,7 +229,7 @@ def run(hook_debug: bool, command: tuple) -> None:
 
     # Inject the agent
     agent = Agent()
-    agent.inject()
+    agent.inject(std)
     state_connection.set_agent(agent=agent)
 
     try:
@@ -263,7 +267,7 @@ def device_type():
 
         # Inject the agent
         agent = Agent()
-        agent.inject()
+        agent.inject(std)
         state_connection.set_agent(agent=agent)
 
         device_name, system_name, model, system_version = get_device_info()
